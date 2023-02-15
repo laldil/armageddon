@@ -1,10 +1,12 @@
 package models
 
 import (
+	"armageddon/internal/data"
 	"armageddon/internal/validator"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -119,6 +121,59 @@ func (m CarModel) Delete(id int64) error {
 	}
 
 	return nil
+}
+
+func (m CarModel) GetAll(brand string, color string, filters data.Filters) ([]*Car, data.Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), * FROM car
+		WHERE (to_tsvector('simple', brand) @@ plainto_tsquery('simple', $1) OR $1 = '')
+		AND (to_tsvector('simple', color) @@ plainto_tsquery('simple', $2) OR $2 = '')
+		ORDER BY %s %s, id ASC
+		LIMIT $3 OFFSET $4`, filters.SortColumn(), filters.SortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{brand, color, filters.Limit(), filters.Offset()}
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, data.Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	cars := []*Car{}
+
+	for rows.Next() {
+		var car Car
+
+		err := rows.Scan(
+			&totalRecords,
+			&car.ID,
+			&car.CreatedAt,
+			&car.Brand,
+			&car.Description,
+			&car.Color,
+			&car.Year,
+			&car.Price,
+			&car.IsUsed,
+		)
+		if err != nil {
+			return nil, data.Metadata{}, err
+		}
+
+		cars = append(cars, &car)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, data.Metadata{}, err
+	}
+
+	metadata := data.CalculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return cars, metadata, nil
 }
 
 func ValidateCar(v *validator.Validator, car *Car) {
