@@ -1,6 +1,7 @@
 package main
 
 import (
+	"armageddon/internal/data"
 	"armageddon/internal/models"
 	"armageddon/internal/validator"
 	"errors"
@@ -172,6 +173,43 @@ func (app *application) deleteCarHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "car successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) listCarHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Brand string
+		Color string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Brand = app.readString(qs, "brand", "")
+	input.Color = app.readString(qs, "color", "")
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"id", "brand", "year", "price", "is_used", "-id", "-brand", "-year", "-price", "-is_used"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	car, metadata, err := app.models.Car.GetAll(input.Brand, input.Color, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"car": car, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
