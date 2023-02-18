@@ -19,5 +19,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/car/:id", app.deleteCarHandler)
 	router.HandlerFunc(http.MethodGet, "/cars", app.listCarHandler)
 
+	router.HandlerFunc(http.MethodPost, "/users", app.registerUserHandler)
+
 	return app.recoverPanic(router)
 }
