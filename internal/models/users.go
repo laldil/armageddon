@@ -51,11 +51,13 @@ func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
+
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 	v.Check(password != "", "password", "must be provided")
 	v.Check(len(password) >= 8, "password", "must be at least 8 bytes long")
 	v.Check(len(password) <= 72, "password", "must not be more than 72 bytes long")
 }
+
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Name != "", "name", "must be provided")
 	v.Check(user.Surname != "", "surname", "must be provided")
@@ -84,7 +86,7 @@ func (m UserModel) Insert(user *User) error {
 	query := `
 INSERT INTO users (name, surname, email, password_hash, activated, roles)
 VALUES ($1, $2, $3, $4 , $5, $6)
-RETURNING id, created_at`
+RETURNING id`
 	args := []any{user.Name, user.Surname, user.Email, user.Password.hash, user.Activated, user.Roles}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
