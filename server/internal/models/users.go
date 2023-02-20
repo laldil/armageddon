@@ -112,9 +112,10 @@ RETURNING id`
 
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
-SELECT *
-FROM users
-WHERE email = $1`
+		SELECT id, name, surname, email, password_hash, activated, roles
+		FROM users
+		WHERE email = $1`
+
 	var user User
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -140,10 +141,10 @@ WHERE email = $1`
 
 func (m UserModel) Update(user *User) error {
 	query := `
-UPDATE users
-SET name = $1, surname = $2, email = $3, password_hash = $4, activated = $5, roles = $6
-WHERE id = $7 
-RETURNING id`
+		UPDATE users
+		SET name = $1, surname = $2, email = $3, password_hash = $4, activated = $5, roles = $6
+		WHERE id = $7 
+		RETURNING id`
 	args := []any{
 		user.Name,
 		user.Surname,
@@ -153,8 +154,10 @@ RETURNING id`
 		user.Roles,
 		user.ID,
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID)
 	if err != nil {
 		switch {
@@ -170,7 +173,7 @@ RETURNING id`
 func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 	query := `
-		SELECT * FROM users
+		SELECT id, name, surname, email, password_hash, activated, roles FROM users
 		INNER JOIN tokens ON users.id = tokens.user_id
 		WHERE tokens.hash = $1
 		AND tokens.scope = $2

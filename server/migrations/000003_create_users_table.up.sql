@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash bytea NOT NULL,
     activated bool NOT NULL,
     roles text NOT NULL
-    );
+);

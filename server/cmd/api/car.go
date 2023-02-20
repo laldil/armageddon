@@ -24,12 +24,14 @@ func (app *application) createCarHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	user := app.contextGetUser(r)
 	car := &models.Car{
 		Brand:       input.Brand,
 		Description: input.Description,
 		Color:       input.Color,
 		Year:        input.Year,
 		Price:       input.Price,
+		OwnerID:     user.ID,
 	}
 
 	v := validator.New()
@@ -112,6 +114,12 @@ func (app *application) updateCarHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	user := app.contextGetUser(r)
+	if car.OwnerID != user.ID || user.Roles != "MODERATOR" {
+		app.wrongCarResponse(w, r)
+		return
+	}
+
 	if input.Brand != nil {
 		car.Brand = *input.Brand
 	}
@@ -158,6 +166,25 @@ func (app *application) deleteCarHandler(w http.ResponseWriter, r *http.Request)
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
+		return
+	}
+
+	car, err := app.models.Car.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	user := app.contextGetUser(r)
+	if user.Roles != "MODERATOR" {
+		if car.OwnerID != user.ID {
+			app.wrongCarResponse(w, r)
+		}
 		return
 	}
 
@@ -210,6 +237,97 @@ func (app *application) listCarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"car": car, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) rentCarHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	car, err := app.models.Car.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if car.IsUsed != false {
+		app.carOccupiedResponse(w, r)
+		return
+	}
+
+	user := app.contextGetUser(r)
+	err = app.models.Car.InsertToRent(car, user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	car.IsUsed = true
+	err = app.models.Car.Update(car)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"car": car}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) returnRentedCarHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	car, err := app.models.Car.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if car.IsUsed != true {
+		app.carNotUsedResponse(w, r)
+		return
+	}
+
+	user := app.contextGetUser(r)
+	err = app.models.Car.DeleteFromRent(car, user)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	car.IsUsed = false
+	err = app.models.Car.Update(car)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"car": car}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

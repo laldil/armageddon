@@ -73,3 +73,18 @@ func (app *application) moderatorRoleRequiredResponse(w http.ResponseWriter, r *
 	message := "you must have moderator or admin role to access this resource"
 	app.errorResponse(w, r, http.StatusForbidden, message)
 }
+
+func (app *application) wrongCarResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you can't change the data of someone other than your transport"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+func (app *application) carOccupiedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "the car is already occupied"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+func (app *application) carNotUsedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "this car is not used"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}

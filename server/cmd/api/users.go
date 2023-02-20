@@ -85,14 +85,11 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		TokenPlaintext string `json:"token"`
 	}
 
-	//err := app.readJSON(w, r, &input)
-	//if err != nil {
-	//	app.badRequestResponse(w, r, err)
-	//	return
-	//}
-
-	qs := r.URL.Query()
-	input.TokenPlaintext = app.readString(qs, "token", "")
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
 
 	v := validator.New()
 	if data.ValidateTokenPlaintext(v, input.TokenPlaintext); !v.Valid() {
