@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS car (
     color text NOT NULL,
     year integer NOT NULL,
     price integer NOT NULL,
-    is_used boolean NOT NULL DEFAULT false
+    is_used boolean NOT NULL DEFAULT false,
+    owner_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL
 );

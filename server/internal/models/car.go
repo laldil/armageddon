@@ -23,20 +23,65 @@ type Car struct {
 	Year        int32     `json:"year,omitempty"`
 	Price       int32     `json:"price"`
 	IsUsed      bool      `json:"is_used"`
+	OwnerID     int64     `json:"owner_id"`
 }
 
 func (m CarModel) Insert(car *Car) error {
 	query := `
-		INSERT INTO car (brand, description, color, year, price)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO car (brand, description, color, year, price, owner_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at, is_used`
 
-	args := []any{car.Brand, car.Description, car.Color, car.Year, car.Price}
+	args := []any{car.Brand, car.Description, car.Color, car.Year, car.Price, car.OwnerID}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	return m.DB.QueryRowContext(ctx, query, args...).Scan(&car.ID, &car.CreatedAt, &car.IsUsed)
+}
+
+func (m CarModel) InsertToRent(car *Car, user *User) error {
+	query := `
+		INSERT INTO rented_cars (user_id, car_id, price, taking_date)
+		VALUES ($1, $2, $3, $4)
+		RETURNING car_id`
+
+	args := []any{user.ID, car.ID, car.Price, time.Now()}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return m.DB.QueryRowContext(ctx, query, args...).Scan(&car.ID)
+}
+
+func (m CarModel) DeleteFromRent(car *Car, user *User) error {
+	query := `
+		DELETE FROM rented_cars
+		WHERE car_id = $1 
+		AND user_id = $2`
+
+	args := []any{
+		car.ID,
+		user.ID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
 }
 
 func (m CarModel) Get(id int64) (*Car, error) {
@@ -60,6 +105,7 @@ func (m CarModel) Get(id int64) (*Car, error) {
 		&car.Year,
 		&car.Price,
 		&car.IsUsed,
+		&car.OwnerID,
 	)
 
 	if err != nil {
@@ -77,9 +123,9 @@ func (m CarModel) Get(id int64) (*Car, error) {
 func (m CarModel) Update(car *Car) error {
 	query := `
 		UPDATE car
-		SET brand = $1, description = $2, color = $3, year = $4, price = $5, is_used = $6
-		WHERE id = $7
-		RETURNING created_at`
+		SET brand = $1, description = $2, color = $3, year = $4, price = $5, is_used = $6, owner_id = $7
+		WHERE id = $8
+		RETURNING id`
 
 	args := []any{
 		car.Brand,
@@ -88,13 +134,14 @@ func (m CarModel) Update(car *Car) error {
 		car.Year,
 		car.Price,
 		car.IsUsed,
+		car.OwnerID,
 		car.ID,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRowContext(ctx, query, args...).Scan(&car.CreatedAt)
+	return m.DB.QueryRowContext(ctx, query, args...).Scan(&car.ID)
 }
 
 func (m CarModel) Delete(id int64) error {
@@ -159,6 +206,7 @@ func (m CarModel) GetAll(brand string, color string, filters data.Filters) ([]*C
 			&car.Year,
 			&car.Price,
 			&car.IsUsed,
+			&car.OwnerID,
 		)
 		if err != nil {
 			return nil, data.Metadata{}, err
