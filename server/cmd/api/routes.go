@@ -27,7 +27,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/users/:id", app.requireAdminRole(app.setRoleHandler))
 
 	router.HandlerFunc(http.MethodPost, "/users/photo", app.requireAuthenticatedUser(app.uploadPhotoHandler))
-	router.HandlerFunc(http.MethodGet, "/users/photo/:id", app.showUserPhotoHandler)
+	router.HandlerFunc(http.MethodGet, "/users/:id/photo", app.showUserPhotoHandler)
 
 	router.HandlerFunc(http.MethodPost, "/tokens/authentication", app.createAuthenticationTokenHandler)
 
