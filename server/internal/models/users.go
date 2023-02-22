@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"mime/multipart"
 	"time"
 )
 
@@ -61,6 +62,14 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
+}
+
+func ValidatePhoto(v *validator.Validator, handler *multipart.FileHeader) {
+	v.Check(handler.Filename != "", "photo", "must be provided")
+	v.Check(handler.Size < (32*1024*1024), "size", "must be less than 32MB")
+	v.Check(handler.Header.Get("Content-Type") == "image/jpg" ||
+		handler.Header.Get("Content-Type") == "image/jpeg" ||
+		handler.Header.Get("Content-Type") == "image/png", "type", "must be jpg/jpeg/png")
 }
 
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
@@ -139,6 +148,42 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+func (m UserModel) GetById(id int64) (*User, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `SELECT id, name, surname, email, password_hash, activated, roles
+		FROM users
+		WHERE id = $1`
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Surname,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Roles,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
 func (m UserModel) Update(user *User) error {
 	query := `
 		UPDATE users
@@ -167,6 +212,32 @@ func (m UserModel) Update(user *User) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (m UserModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `DELETE FROM users WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
 	return nil
 }
 

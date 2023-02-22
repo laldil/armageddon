@@ -74,6 +74,11 @@ func (app *application) moderatorRoleRequiredResponse(w http.ResponseWriter, r *
 	app.errorResponse(w, r, http.StatusForbidden, message)
 }
 
+func (app *application) adminRoleRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you must have admin role to access this resource"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
 func (app *application) wrongCarResponse(w http.ResponseWriter, r *http.Request) {
 	message := "you can't change the data of someone other than your transport"
 	app.errorResponse(w, r, http.StatusForbidden, message)
@@ -87,4 +92,9 @@ func (app *application) carOccupiedResponse(w http.ResponseWriter, r *http.Reque
 func (app *application) carNotUsedResponse(w http.ResponseWriter, r *http.Request) {
 	message := "this car is not used"
 	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+func (app *application) fileSizeLimitResponse(w http.ResponseWriter, r *http.Request) {
+	message := "the file exceeds the maximum allowed memory size"
+	app.errorResponse(w, r, http.StatusNotAcceptable, message)
 }

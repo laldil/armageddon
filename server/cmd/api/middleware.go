@@ -103,3 +103,16 @@ func (app *application) requireModeratorRole(next http.HandlerFunc) http.Handler
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (app *application) requireAdminRole(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		if user.Roles != "ADMIN" {
+			app.adminRoleRequiredResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
