@@ -11,8 +11,6 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	router.HandlerFunc(http.MethodGet, "/healthcheck", app.healthcheckHandler)
-
 	router.HandlerFunc(http.MethodGet, "/car/:id", app.showCarHandler)
 	router.HandlerFunc(http.MethodGet, "/cars", app.listCarHandler)
 	router.HandlerFunc(http.MethodPost, "/car", app.requireActivatedUser(app.createCarHandler))
@@ -24,6 +22,12 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/users/activated", app.activateUserHandler)
+	router.HandlerFunc(http.MethodGet, "/users/:id", app.showUserHandler)
+	router.HandlerFunc(http.MethodDelete, "/users/:id", app.requireAdminRole(app.deleteUserHandler))
+	router.HandlerFunc(http.MethodPatch, "/users/:id", app.requireAdminRole(app.setRoleHandler))
+
+	router.HandlerFunc(http.MethodPost, "/users/photo", app.requireAuthenticatedUser(app.uploadPhotoHandler))
+	router.HandlerFunc(http.MethodGet, "/users/photo/:id", app.showUserPhotoHandler)
 
 	router.HandlerFunc(http.MethodPost, "/tokens/authentication", app.createAuthenticationTokenHandler)
 
