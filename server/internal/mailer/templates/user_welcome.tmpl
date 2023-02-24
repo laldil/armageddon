@@ -3,9 +3,11 @@
 {{define "plainBody"}}
 Hello, {{.userName}}.
 Thanks for signing up for a Armageddon Car Rental account. We're excited to have you on board!
-To activate your account please click the following link:
+To activate your account please send your token the following link:
 {"token": "{{.activationToken}}"}
-localhost:4000/users/activated?token={{.activationToken}}
+
+https://armageddon-go.onrender.com/tokens/authentication
+
 Please note that this is a one-time use token and it will expire in 3 days.
 Thanks,
 The Armageddon Team
@@ -21,8 +23,8 @@ The Armageddon Team
 <body>
     <p>Hello, {{.userName}}.</p>
     <p>Thanks for signing up for a Armageddon Car Rental account. We're excited to have you on board!</p>
-    <p>To activate your account please click the following link:
-        <code>localhost:4000/users/activated?token={{.activationToken}}</code>
+    <p>To activate your account please send your token the following link:
+        <code>https://armageddon-go.onrender.com/tokens/authentication?token={{.activationToken}}</code>
     </p>
     <p>Please note that this is a one-time use token and it will expire in 3 days.</p>
     <p>Thanks,</p>

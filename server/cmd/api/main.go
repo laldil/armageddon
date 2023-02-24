@@ -52,11 +52,11 @@ func main() {
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 
-	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.gmail.com", "SMTP host")
-	flag.IntVar(&cfg.smtp.port, "smtp-port", 465, "SMTP port")
-	flag.StringVar(&cfg.smtp.username, "smtp-username", "lilycolins231@gmail.com", "SMTP username")
-	flag.StringVar(&cfg.smtp.password, "smtp-password", "admin777!!!", "SMTP password")
-	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Armageddon <lilycolins231@gmail.com>", "SMTP sender")
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "outlook.office365.com", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 587, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "211452@astanait.edu.kz", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "Aitu2021!", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Armageddon <211452@astanait.edu.kz>", "SMTP sender")
 
 	flag.Parse()
 
